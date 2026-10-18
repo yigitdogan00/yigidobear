@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
+  <!-- Shadow -->
+  <ellipse cx="60" cy="112" rx="36" ry="6" fill="#0284c7" opacity="0.15"/>
+
+  <!-- Left Ear -->
+  <circle cx="34" cy="34" r="14" fill="#b46a32"/>
+  <circle cx="34" cy="34" r="8" fill="#fbcfe8"/>
+
+  <!-- Right Ear -->
+  <circle cx="86" cy="34" r="14" fill="#b46a32"/>
+  <circle cx="86" cy="34" r="8" fill="#fbcfe8"/>
+
+  <!-- Body -->
+  <ellipse cx="60" cy="78" rx="38" ry="34" fill="#c97a3e"/>
+  <!-- Tummy Patch -->
+  <ellipse cx="60" cy="82" rx="24" ry="22" fill="#fed7aa"/>
+
+  <!-- Little Feet / Paws -->
+  <ellipse cx="44" cy="108" rx="10" ry="7" fill="#b46a32"/>
+  <ellipse cx="76" cy="108" rx="10" ry="7" fill="#b46a32"/>
+  <circle cx="44" cy="107" r="4" fill="#fed7aa"/>
+  <circle cx="76" cy="107" r="4" fill="#fed7aa"/>
+
+  <!-- Head -->
+  <circle cx="60" cy="52" r="32" fill="#c97a3e"/>
+
+  <!-- Muzzle -->
+  <ellipse cx="60" cy="60" rx="16" ry="12" fill="#fed7aa"/>
+  <!-- Nose -->
+  <path d="M 55,54 C 55,52 65,52 65,54 C 65,58 60,61 60,61 C 60,61 55,58 55,54 Z" fill="#451a03"/>
+  <!-- Mouth -->
+  <path d="M 55,63 Q 60,67 65,63" stroke="#451a03" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Cheeks -->
+  <circle cx="38" cy="59" r="6" fill="#f43f5e" opacity="0.25"/>
+  <circle cx="82" cy="59" r="6" fill="#f43f5e" opacity="0.25"/>
+
+  <!-- Eyes (Kawaii Shiny) -->
+  <circle cx="44" cy="47" r="5.5" fill="#1e293b"/>
+  <circle cx="76" cy="47" r="5.5" fill="#1e293b"/>
+  <!-- Eye highlights -->
+  <circle cx="46" cy="45" r="2.2" fill="#ffffff"/>
+  <circle cx="78" cy="45" r="2.2" fill="#ffffff"/>
+  <circle cx="43" cy="49" r="1.1" fill="#ffffff"/>
+  <circle cx="75" cy="49" r="1.1" fill="#ffffff"/>
+
+  <!-- Left Waving Arm / Paw -->
+  <ellipse cx="23" cy="68" rx="7" ry="14" fill="#b46a32" transform="rotate(-35 23 68)"/>
+  <circle cx="20" cy="60" r="5" fill="#fed7aa"/>
+
+  <!-- Right Resting Arm -->
+  <ellipse cx="96" cy="74" rx="7" ry="13" fill="#b46a32" transform="rotate(25 96 74)"/>
+
+  <!-- Ocean Blue Bow Tie -->
+  <polygon points="52,70 60,73 52,76" fill="#0284c7"/>
+  <polygon points="68,70 60,73 68,76" fill="#0284c7"/>
+  <circle cx="60" cy="73" r="3" fill="#0ea5e9"/>
+</svg>

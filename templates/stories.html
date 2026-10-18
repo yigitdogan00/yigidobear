@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Hikaye Kütüphanesi (A1 - B2) - YiğidoBear{% endblock %}
+
+{% block content %}
+<div class="stories-library-wrapper">
+    <!-- Top Return & Breadcrumb Bar -->
+    <div class="stories-top-nav">
+        <a href="{{ url_for('dashboard') }}" class="btn-back-dashboard" title="Yol Haritasına Dön">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Yol Haritasına Dön</span>
+        </a>
+
+        <div class="stories-stats-counter-tag">
+            <span class="stats-icon">🏆</span>
+            <span class="stats-text"><strong>{{ total_completed }}</strong> / 20 Hikaye Tamamlandı</span>
+        </div>
+    </div>
+
+    <!-- Hero Header Banner -->
+    <div class="stories-hero-banner">
+        <div class="stories-hero-content">
+            <div class="stories-hero-badge">📚 SEVİYELİ İNGİLİZCE KÜTÜPHANESİ</div>
+            <h1 class="stories-hero-title">İnteraktif Hikayeler</h1>
+            <p class="stories-hero-desc">
+                A1 Başlangıç seviyesinden B2 İleri seviyeye kadar gerçek hayat diyaloglarını dinle, telaffuz et, mini testleri çöz ve seviyeleri birer birer aç!
+            </p>
+        </div>
+        <div class="stories-hero-mascot">
+            <img src="{{ url_for('static', filename='images/mascot_happy.svg') }}" alt="Ayıcık Yiğido Kitap Okuyor" class="hero-mascot-img">
+        </div>
+    </div>
+
+    <!-- Level Navigation Tabs (A1, A2, B1, B2) -->
+    <div class="level-tabs-container">
+        <div class="level-tabs-track">
+            {% for lvl in levels %}
+            {% set is_current_tab = (active_level == lvl.code) %}
+            <button type="button" 
+                    class="level-tab-btn {% if is_current_tab %}active{% endif %} {% if not lvl.is_unlocked %}tab-locked{% endif %}"
+                    onclick="switchLevelTab('{{ lvl.code }}')"
+                    id="tab-btn-{{ lvl.code }}">
+                <span class="tab-level-icon">
+                    {% if not lvl.is_unlocked %}
+                        🔒
+                    {% elif lvl.is_all_completed %}
+                        ✓
+                    {% else %}
+                        {{ lvl.icon }}
+                    {% endif %}
+                </span>
+                <div class="tab-text-group">
+                    <span class="tab-level-code">{{ lvl.code }}</span>
+                    <span class="tab-level-name">{{ lvl.title.split()[0] }}</span>
+                </div>
+                {% if lvl.is_unlocked %}
+                    <span class="tab-level-progress-pill {% if lvl.is_all_completed %}completed{% endif %}">
+                        {{ lvl.completed_count }}/{{ lvl.total_count }}
+                    </span>
+                {% else %}
+                    <span class="tab-level-progress-pill pill-locked">🔒</span>
+                {% endif %}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Level Content Panels -->
+    <div class="level-panels-wrapper">
+        {% for lvl in levels %}
+        {% set is_active_pane = (active_level == lvl.code) %}
+        <div class="level-panel {% if is_active_pane %}active{% endif %}" id="panel-{{ lvl.code }}">
+            
+            <!-- Panel Header Info -->
+            <div class="level-panel-header">
+                <div class="level-header-left">
+                    <span class="level-status-pill" style="border-color: {{ lvl.color }}; color: {{ lvl.color }};">
+                        {{ lvl.badge }}
+                    </span>
+                    <h2 class="level-panel-title">{{ lvl.title }}</h2>
+                    <p class="level-panel-desc">{{ lvl.desc }}</p>
+                </div>
+
+                <div class="level-header-progress-box">
+                    <div class="level-progress-labels">
+                        <span class="progress-title">Seviye İlerlemesi</span>
+                        <span class="progress-ratio"><strong>{{ lvl.completed_count }}</strong> / {{ lvl.total_count }} Hikaye</span>
+                    </div>
+                    <div class="level-progress-track">
+                        <div class="level-progress-fill" style="width: {{ lvl.percent }}%; background: {{ lvl.color }};"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- If Level is LOCKED -->
+            {% if not lvl.is_unlocked %}
+            <div class="level-locked-banner-card">
+                <div class="locked-banner-icon-wrap">
+                    <span class="locked-big-icon">🔒</span>
+                </div>
+                <h3 class="locked-banner-title">Bu Seviye Kilitli!</h3>
+                <p class="locked-banner-instruction">
+                    Kilidi açmak için <strong>{{ lvl.prev_level }} seviyesindeki tüm hikayeleri tamamla</strong>.
+                </p>
+                <div class="locked-banner-actions">
+                    <button type="button" class="btn-3d btn-blue" onclick="switchLevelTab('{{ lvl.prev_level }}')">
+                        {{ lvl.prev_level }} Seviyesine Git ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- If Level is UNLOCKED: Display 5 Story Cards -->
+            {% else %}
+            <div class="stories-grid">
+                {% for story in lvl.stories %}
+                <div class="story-card story-card-{{ story.status }}" id="story-card-{{ story.id }}">
+                    <!-- Card Top Header -->
+                    <div class="story-card-top">
+                        <div class="story-icon-bubble">
+                            <span>{{ story.icon or '☕' }}</span>
+                        </div>
+                        <div class="story-card-badges">
+                            <span class="story-order-badge">{{ lvl.code }} • Hikaye {{ story.order_in_level }}</span>
+                            <span class="story-xp-tag">⚡ +{{ story.xp_reward }} XP</span>
+                        </div>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="story-card-body">
+                        <h3 class="story-card-title">{{ story.title }}</h3>
+                        <p class="story-card-description">{{ story.description }}</p>
+                    </div>
+
+                    <!-- Card Footer Actions -->
+                    <div class="story-card-footer">
+                        {% if story.status == 'completed' %}
+                            <div class="story-status-indicator completed">
+                                <span class="indicator-icon">✓</span>
+                                <span class="indicator-text">Tamamlandı</span>
+                            </div>
+                            <a href="{{ url_for('story_view', story_id=story.id) }}" class="btn-3d btn-green-soft btn-story-link">
+                                <span>Tekrar Oku</span>
+                                <span class="btn-arrow">↺</span>
+                            </a>
+                        {% elif story.status == 'active' %}
+                            <div class="story-status-indicator next-up">
+                                <span class="indicator-icon">▶</span>
+                                <span class="indicator-text">Sıradaki Hikaye</span>
+                            </div>
+                            <a href="{{ url_for('story_view', story_id=story.id) }}" class="btn-3d btn-blue pulse-btn btn-story-link">
+                                <span>Oku</span>
+                                <span class="btn-arrow">➔</span>
+                            </a>
+                        {% elif story.status == 'open' %}
+                            <div class="story-status-indicator open">
+                                <span class="indicator-icon">📖</span>
+                                <span class="indicator-text">Açık</span>
+                            </div>
+                            <a href="{{ url_for('story_view', story_id=story.id) }}" class="btn-3d btn-blue btn-story-link">
+                                <span>Oku</span>
+                                <span class="btn-arrow">➔</span>
+                            </a>
+                        {% else %}
+                            <div class="story-status-indicator locked">
+                                <span class="indicator-icon">🔒</span>
+                                <span class="indicator-text">Kilitli</span>
+                            </div>
+                            <button type="button" class="btn-3d btn-locked-state btn-story-link" onclick="showStoriesToast('Önceki hikayeyi tamamlamalısın!')" disabled>
+                                <span>Kilitli</span>
+                                <span class="btn-arrow">🔒</span>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Toast message alert -->
+<div class="stories-toast" id="stories-toast">
+    <span class="toast-icon">ℹ️</span>
+    <span class="toast-text" id="stories-toast-text">Bildirim</span>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function switchLevelTab(levelCode) {
+        // Remove active class from tabs
+        document.querySelectorAll('.level-tab-btn').forEach(btn => btn.classList.remove('active'));
+        // Remove active class from panels
+        document.querySelectorAll('.level-panel').forEach(panel => panel.classList.remove('active'));
+
+        const targetBtn = document.getElementById(`tab-btn-${levelCode}`);
+        const targetPanel = document.getElementById(`panel-${levelCode}`);
+
+        if (targetBtn) targetBtn.classList.add('active');
+        if (targetPanel) targetPanel.classList.add('active');
+
+        // Update URL query without page reload
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('level', levelCode);
+        window.history.replaceState({}, '', newUrl);
+
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playTap) {
+            SoundEffects.playTap();
+        }
+    }
+
+    function showStoriesToast(msg) {
+        const toast = document.getElementById('stories-toast');
+        const text = document.getElementById('stories-toast-text');
+        if (!toast || !text) return;
+        text.textContent = msg;
+        toast.classList.add('show');
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playWrong) {
+            SoundEffects.playWrong();
+        }
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3200);
+    }
+
+    // Auto-check for query params on load
+    window.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('locked') === '1') {
+            showStoriesToast('Bu hikaye veya seviye henüz kilitli! Sırayla tamamlayarak ilerle.');
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
+  <!-- Shadow -->
+  <ellipse cx="60" cy="112" rx="36" ry="6" fill="#0284c7" opacity="0.12"/>
+
+  <!-- Left Droopy Ear -->
+  <circle cx="34" cy="38" r="13" fill="#a15824"/>
+  <circle cx="34" cy="38" r="7" fill="#fbcfe8"/>
+
+  <!-- Right Droopy Ear -->
+  <circle cx="86" cy="38" r="13" fill="#a15824"/>
+  <circle cx="86" cy="38" r="7" fill="#fbcfe8"/>
+
+  <!-- Body -->
+  <ellipse cx="60" cy="79" rx="38" ry="34" fill="#ba6f35"/>
+  <!-- Tummy -->
+  <ellipse cx="60" cy="83" rx="24" ry="22" fill="#fed7aa"/>
+
+  <!-- Feet -->
+  <ellipse cx="44" cy="108" rx="10" ry="7" fill="#a15824"/>
+  <ellipse cx="76" cy="108" rx="10" ry="7" fill="#a15824"/>
+  <circle cx="44" cy="107" r="4" fill="#fed7aa"/>
+  <circle cx="76" cy="107" r="4" fill="#fed7aa"/>
+
+  <!-- Head (slightly tilted) -->
+  <circle cx="60" cy="54" r="32" fill="#ba6f35"/>
+
+  <!-- Muzzle -->
+  <ellipse cx="60" cy="63" rx="16" ry="12" fill="#fed7aa"/>
+  <!-- Nose -->
+  <path d="M 55,57 C 55,55 65,55 65,57 C 65,61 60,63 60,63 C 60,63 55,61 55,57 Z" fill="#451a03"/>
+  <!-- Soft Sad/Wobbly Mouth -->
+  <path d="M 56,66 Q 60,63 64,66" stroke="#451a03" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Cheeks with soft blush -->
+  <circle cx="38" cy="62" r="5" fill="#f43f5e" opacity="0.2"/>
+  <circle cx="82" cy="62" r="5" fill="#f43f5e" opacity="0.2"/>
+
+  <!-- Worried / Sad Eyes -->
+  <circle cx="44" cy="50" r="5" fill="#1e293b"/>
+  <circle cx="76" cy="50" r="5" fill="#1e293b"/>
+  <!-- Teary/Big Eye highlights -->
+  <circle cx="45" cy="48" r="2" fill="#ffffff"/>
+  <circle cx="77" cy="48" r="2" fill="#ffffff"/>
+  <!-- Worried Eyebrows -->
+  <path d="M 40,43 Q 45,41 49,44" stroke="#78350f" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <path d="M 71,44 Q 75,41 80,43" stroke="#78350f" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+
+  <!-- Cute Tear Drop on cheek -->
+  <path d="M 83,56 C 81,60 85,64 83,65 C 81,64 85,60 83,56 Z" fill="#0284c7" opacity="0.8"/>
+
+  <!-- Encouraging Paws: one touching chin/chest, other down -->
+  <ellipse cx="44" cy="74" rx="7" ry="12" fill="#a15824" transform="rotate(35 44 74)"/>
+  <circle cx="48" cy="71" r="5" fill="#fed7aa"/>
+
+  <ellipse cx="94" cy="76" rx="7" ry="13" fill="#a15824" transform="rotate(20 94 76)"/>
+
+  <!-- Ocean Blue Bow Tie -->
+  <polygon points="53,72 60,75 53,78" fill="#0284c7"/>
+  <polygon points="67,72 60,75 67,78" fill="#0284c7"/>
+  <circle cx="60" cy="75" r="3" fill="#38bdf8"/>
+</svg>

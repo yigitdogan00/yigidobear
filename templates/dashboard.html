@@ -1,0 +1,1050 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - YiğidoBear ile İngilizce Yol Haritası{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Sol Taraf: Bölümler & Üniteler Navigasyon Menüsü -->
+    <aside class="dashboard-left-sidebar">
+        <!-- BÖLÜMLER & ÜNİTELER KARTI -->
+        <div class="side-card units-nav-card">
+            <div class="side-card-title">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    📚 Bölümler & Üniteler
+                </span>
+                <span class="unit-counter-badge">{{ units|selectattr('is_unlocked')|list|length }} / {{ units|length }} Açık</span>
+            </div>
+            <div class="units-list">
+                {% for u in units %}
+                {% set is_selected = (selected_unit and selected_unit.id == u.id) %}
+                <div class="unit-nav-item {% if is_selected %}current-unit selected-unit{% elif u.is_completed %}completed-unit{% elif not u.is_unlocked %}locked-unit{% endif %}"
+                     {% if not u.is_unlocked %}
+                     onclick="showUnitLockedToast('{{ u.title }} kilitli! Önceki üniteyi ve Boss Sınavı\'nı tamamlamalısın!')"
+                     title="Kilitli Bölüm - Açmak için önceki üniteyi tamamlayın"
+                     {% else %}
+                     onclick="window.location.href='{{ url_for('dashboard', unit=u.id) }}'"
+                     title="Bu üniteyi görüntülemek için tıkla"
+                     {% endif %}>
+                    <div class="unit-nav-icon">
+                        {% if u.is_completed %}
+                            <span class="unit-status-icon completed" title="Tamamlandı">✓</span>
+                        {% elif not u.is_unlocked %}
+                            <span class="unit-status-icon locked" title="Kilitli">🔒</span>
+                        {% elif is_selected %}
+                            <span class="unit-status-icon active" title="Mevcut Konum">📍</span>
+                        {% else %}
+                            <span class="unit-status-icon open" title="Açık Ünite">📖</span>
+                        {% endif %}
+                    </div>
+                    <div class="unit-nav-details">
+                        <div class="unit-nav-title" title="{{ u.title }}">
+                            {{ u.title }}
+                        </div>
+                        <div class="unit-nav-sub">
+                            {% if is_selected %}
+                                <span class="badge-current-location">Şu Anki Konum</span>
+                            {% elif u.is_completed %}
+                                <span class="badge-completed">Tamamlandı</span>
+                            {% elif not u.is_unlocked %}
+                                <span class="badge-locked">Kilitli Bölüm</span>
+                            {% else %}
+                                <span class="badge-open">Açık Bölüm</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if is_selected %}
+                    <span class="unit-active-chevron">▶</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 📚 HİKAYELER KÜTÜPHANESİ (STORIES) KARTI / BUTONU -->
+        <div class="side-card stories-nav-card" onclick="window.location.href='{{ url_for('stories_library') }}'" id="btn-nav-stories" title="Seviyeli Hikaye Kütüphanesine Git">
+            <div class="stories-nav-header">
+                <div class="stories-nav-icon-wrap">
+                    <span class="stories-nav-icon">📚</span>
+                </div>
+                <div class="stories-nav-title-group">
+                    <div class="stories-nav-level-tag">A1 • A2 • B1 • B2</div>
+                    <h3 class="stories-nav-heading">Hikayeler (Stories)</h3>
+                </div>
+                <div class="stories-nav-arrow-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </div>
+            <p class="stories-nav-subtext">3 sayfalık interaktif diyaloglar ve anlama testleri ile pratik yap!</p>
+            <div class="stories-nav-progress-row">
+                <span class="stories-nav-progress-text"><strong>{{ completed_stories_count|default(0) }}</strong> / 20 Tamamlandı</span>
+                <span class="stories-nav-action-badge">Kütüphaneye Git ➔</span>
+            </div>
+        </div>
+
+        <!-- 🎁 1 Ay Ücretsiz PLUS Butonu & Mini Kartı -->
+        <div class="side-card referral-nav-card">
+            <button type="button" class="btn-referral-promo" onclick="openReferralModal()" id="btn-referral-modal" title="Arkadaşlarını davet et, 1 ay ücretsiz PLUS kazan!">
+                <span class="referral-promo-icon">🎁</span>
+                <span class="referral-promo-text">1 Ay Ücretsiz PLUS</span>
+            </button>
+            {% set inv_count = user['invited_count'] or 0 %}
+            {% set inv_percent = [[((inv_count / 10) * 100)|round|int, 100]|min, 0]|max %}
+            <div class="referral-nav-progress">
+                <div class="referral-nav-bar-track">
+                    <div class="referral-nav-bar-fill" style="width: {{ inv_percent }}%;"></div>
+                </div>
+                <div class="referral-nav-count-label">
+                    <span>{{ inv_count }} / 10 Davet</span>
+                    {% if is_premium %}
+                        <span class="badge-plus-active">👑 PLUS Aktif</span>
+                    {% else %}
+                        <span class="badge-plus-remaining">{{ 10 - inv_count }} kaldı</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- User Profile Quick Card -->
+        <div class="side-card profile-quick-card">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                {% if user['avatar'] %}
+                    <img src="{{ user['avatar'] }}" alt="Profil" class="profile-quick-avatar" referrerpolicy="no-referrer">
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/mascot_happy.svg') }}" alt="Ayıcık" class="profile-quick-avatar">
+                {% endif %}
+                <div style="flex: 1; overflow: hidden;">
+                    <strong style="font-size: 15px; color: var(--text-heading); display: block; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                        {{ user['name'] or user['username'] }}
+                    </strong>
+                    <span style="font-size: 11.5px; color: {% if is_premium %}#d97706{% else %}var(--ocean-primary){% endif %}; font-weight: 800;">
+                        {% if is_premium %}👑 YiğidoBear PLUS Üyesi{% else %}İngilizce Öğrencisi{% endif %}
+                    </span>
+                </div>
+            </div>
+            <a href="{{ url_for('profile') }}" class="btn-3d btn-white" style="width: 100%; margin-top: 14px; font-size: 12px; padding: 8px;">
+                👤 Profil & İstatistiklerim
+            </a>
+        </div>
+    </aside>
+
+    <!-- Orta Alan: Seçili Ünite Öğrenme Yolu (Snake / S-Curve) -->
+    <section class="units-stream">
+        {% if request.args.get('locked') == 'unit_locked' %}
+        <div class="oauth-alert warning" style="margin-bottom: 20px;">
+            <strong>🔒 Kilitli Ünite Uyarısı</strong>
+            <p>Bu üniteye geçebilmek için lütfen önceki üniteyi ve Seviye Atlama Boss Sınavı'nı başarıyla tamamlayınız! 🐻</p>
+        </div>
+        {% elif request.args.get('locked') %}
+        <div class="oauth-alert warning" style="margin-bottom: 20px;">
+            <strong>🔒 Kilitli Ders Uyarısı</strong>
+            <p>Bu adıma geçebilmek için lütfen önceki konuyu veya sınavı başarıyla tamamlayınız. İngilizceyi adım adım öğrenmek kalıcılığı artırır! 🐻</p>
+        </div>
+        {% endif %}
+
+        {% if selected_unit %}
+        <div class="unit-card" id="unit-{{ selected_unit.id }}">
+            <!-- Unit Header Banner (20px rounded with glassmorphism buttons) -->
+            <div class="unit-banner {% if not selected_unit.is_unlocked %}locked-banner{% endif %}"
+                 style="background: {% if selected_unit.is_unlocked %}linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%){% else %}linear-gradient(135deg, #475569 0%, #64748b 100%){% endif %};">
+                <div class="unit-info">
+                    <h2>
+                        {% if not selected_unit.is_unlocked %}<span>🔒</span>{% endif %}
+                        {{ selected_unit.title }}
+                    </h2>
+                    <p>{{ selected_unit.description }}</p>
+                </div>
+                <div class="unit-banner-actions">
+                    {% if selected_unit.is_unlocked %}
+                    <button class="unit-guide-btn" onclick="openUnitGuideModal()">
+                        📖 Kılavuz
+                    </button>
+                    {% else %}
+                    <span class="unit-guide-btn" style="cursor: default; opacity: 0.9;">
+                        🔒 Kilitli Bölüm
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if selected_unit.is_unlocked and selected_unit.lessons %}
+            <!-- Stepping Stones Path (13-Step Duolingo S-Curve Snake Roadmap) -->
+            <div class="path-container">
+                <!-- Kıvrımlı Organik Patika Çizgisi (SVG Bezier Path) -->
+                <svg id="snake-path-svg" class="snake-path-svg" aria-hidden="true">
+                    <path id="snake-path-bg" class="snake-path-bg" d=""></path>
+                    <path id="snake-path-dashed" class="snake-path-dashed" d=""></path>
+                </svg>
+
+                {% for lesson in selected_unit.lessons %}
+                    {# Gerçek S-Curve 4 Aşamalı Zikzak: 0 -> -50px -> 0 -> +50px -> 0 #}
+                    {% set step_mod = loop.index0 % 4 %}
+                    {% if step_mod == 0 %}
+                        {% set snake_class = 'step-snake-center step-snake-1' %}
+                    {% elif step_mod == 1 %}
+                        {% set snake_class = 'step-snake-left step-snake-2' %}
+                    {% elif step_mod == 2 %}
+                        {% set snake_class = 'step-snake-center step-snake-3' %}
+                    {% else %}
+                        {% set snake_class = 'step-snake-right step-snake-4' %}
+                    {% endif %}
+
+                    <div class="path-step-wrapper {{ snake_class }}" data-step-index="{{ loop.index0 }}">
+                        <!-- Node Action Button -->
+                        {% if lesson.status == 'active' %}
+                            <!-- Bouncing Bear Mascot on Active Step -->
+                            <div class="active-mascot-guide" title="Hadi Başlayalım!">
+                                <img src="{{ url_for('static', filename='images/mascot_happy.svg') }}" alt="Ayıcık Yiğido" class="mascot-bouncing-icon">
+                            </div>
+
+                            <span class="active-crown-badge {% if lesson.is_exam %}active-exam-crown-badge{% endif %}">
+                                {% if lesson.is_exam %}
+                                    {% if lesson.order_num == 13 %}👑 BOSS BAŞLA{% else %}🏆 SINAV BAŞLA{% endif %}
+                                {% else %}
+                                    BAŞLA
+                                {% endif %}
+                            </span>
+
+                            {% if user['hearts'] <= 0 and not is_premium %}
+                                <a href="javascript:void(0)" onclick="openNoHeartsNotice()" class="path-node active {% if lesson.is_exam %}exam-node{% if lesson.order_num == 13 %} boss-node{% endif %}{% endif %}" title="{{ lesson.title }} (Canın bitti)">
+                                    <div class="node-icon">
+                                        {% if lesson.order_num == 13 %}👑{% elif lesson.is_exam %}🏆{% else %}{{ lesson.icon or '⭐' }}{% endif %}
+                                    </div>
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('lesson_view', lesson_id=lesson.id) }}" class="path-node active {% if lesson.is_exam %}exam-node{% if lesson.order_num == 13 %} boss-node{% endif %}{% endif %}" title="{{ lesson.title }} - Başlamak için tıkla">
+                                    <div class="node-icon">
+                                        {% if lesson.order_num == 13 %}👑{% elif lesson.is_exam %}🏆{% else %}{{ lesson.icon or '⭐' }}{% endif %}
+                                    </div>
+                                </a>
+                            {% endif %}
+
+                        {% elif lesson.status == 'completed' %}
+                            <a href="{{ url_for('lesson_view', lesson_id=lesson.id) }}" class="path-node completed {% if lesson.is_exam %}exam-node exam-completed{% if lesson.order_num == 13 %} boss-node{% endif %}{% endif %}" title="{{ lesson.title }} (Tamamlandı - Tekrar Et)">
+                                <div class="node-icon">
+                                    {% if lesson.is_exam %}
+                                        <span class="completed-exam-trophy">{% if lesson.order_num == 13 %}👑{% else %}🏆{% endif %}</span>
+                                    {% else %}
+                                        ✓
+                                    {% endif %}
+                                </div>
+                            </a>
+
+                        {% else %}
+                            <div class="path-node locked {% if lesson.is_exam %}exam-node exam-locked{% if lesson.order_num == 13 %} boss-node{% endif %}{% endif %}" title="{{ lesson.title }} (Önceki adımı tamamla)">
+                                <div class="node-icon">
+                                    {% if lesson.is_exam %}
+                                        <span class="locked-exam-icon">{% if lesson.order_num == 13 %}👑{% else %}🏆{% endif %}</span>
+                                    {% else %}
+                                        🔒
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Lesson Title & Difficulty Stars (Kompakt Sevimli Baloncuk) -->
+                        <div class="node-title-box {% if lesson.is_exam %}exam-title-box{% endif %}">
+                            <span class="node-title-label {% if lesson.is_exam %}exam-title-label{% endif %}">
+                                {{ lesson.title }}
+                            </span>
+                            <div class="node-difficulty-stars" title="Zorluk Derecesi: {{ lesson.difficulty }}/5">
+                                {% for star in range(lesson.difficulty) %}★{% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- Locked Unit Presentation -->
+            <div class="locked-unit-path">
+                <div class="locked-unit-overlay">
+                    <div class="locked-lock-circle">
+                        <span>🔒</span>
+                    </div>
+                    <h3 class="locked-unit-title">{{ selected_unit.title }} Kilitli</h3>
+                    <p class="locked-unit-desc">Bu bölümün ve derslerin kilidini açmak için önceki üniteyi ve Seviye Atlama Boss Sınavı'nı başarıyla tamamla!</p>
+                    <a href="{{ url_for('dashboard', unit=units[0].id) }}" class="btn-3d btn-white" style="font-size: 13px; padding: 10px 22px; font-weight: 800; text-decoration: none;">
+                        Aktif Üniteye Git 🐻
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Sağ Taraf: Can Durumu, Günlük Hedef, İstatistikler -->
+    <aside class="dashboard-sidebar">
+
+        <!-- Little Bear Mascot Motivation Card -->
+        <div class="side-card mascot-card">
+            <img src="{{ url_for('static', filename='images/mascot_happy.svg') }}" alt="Küçük Ayıcık" class="mascot-avatar">
+            <div class="mascot-speech-bubble">
+                "Ünite 1'de 7 konu ve 6 sınav var! Her sınavda kupa kazanarak Boss Sınavı'na doğru ilerle! 🏆🐻"
+            </div>
+        </div>
+
+        <!-- Hearts Status Card (Simplified: Single Plus badge for Premium, Timer + Plus for Standard) -->
+        <div class="side-card {% if is_premium %}side-card-premium{% endif %}">
+            <div class="side-card-title">
+                <span>Can Durumu</span>
+                {% if is_premium %}
+                    <span style="color: #d97706; font-size: 15px; font-weight: 900;" id="dashboard-hearts-count">⚡ ∞ PLUS</span>
+                {% else %}
+                    <span style="color: var(--duo-red); font-size: 15px; font-weight: 800;" id="dashboard-hearts-count">{{ user['hearts'] }} / 5</span>
+                {% endif %}
+            </div>
+            <div class="hearts-box">
+                <div class="hearts-visual" id="dashboard-hearts-pips">
+                    {% if is_premium %}
+                        <div class="hearts-premium-row">
+                            <span class="heart-pip">❤️</span>
+                            <span class="heart-pip">❤️</span>
+                            <span class="heart-pip">❤️</span>
+                            <span class="heart-pip">❤️</span>
+                            <span class="heart-pip">❤️</span>
+                            <span class="plus-infinity-tag">∞</span>
+                        </div>
+                    {% else %}
+                        {% for i in range(1, 6) %}
+                            <span class="heart-pip {% if i > user['hearts'] %}lost{% endif %}">❤️</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if is_premium %}
+            <!-- Single Clean & Elegant Plus Badge for Premium User -->
+            <div class="plus-membership-active-badge" style="margin-top: 10px; font-size: 13px; padding: 11px 14px; justify-content: center; width: 100%;">
+                <span class="plus-sparkle">⚡</span> Sınırsız Can (Plus Aktif)
+            </div>
+            {% else %}
+            <!-- Heart Regeneration Countdown / Full Banner -->
+            <div class="heart-status-banner {% if is_hearts_full %}full{% else %}recharging{% endif %}" id="dashboard-heart-timer-banner">
+                <div class="timer-badge-content">
+                    {% if is_hearts_full %}
+                        <span class="timer-icon">✨</span>
+                        <span class="timer-text" id="dashboard-heart-timer-text">Canlar Dolu</span>
+                    {% else %}
+                        <span class="timer-icon hourglass-spin">⏳</span>
+                        <span class="timer-text" id="dashboard-heart-timer-text">Sonraki can: --:--</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Plus / Sınırsız Can Button (Monetization) -->
+            <button class="btn-plus-gold" id="dashboard-plus-btn" onclick="openPlusModal()">
+                <span class="plus-sparkle">⚡</span> SINIRSIZ CAN (PLUS)
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- Daily Quest / Streak Progress (Bound to user daily_goal) -->
+        <div class="side-card">
+            {% set goal = user['daily_goal'] or 50 %}
+            <div class="side-card-title">
+                <span>Günlük Hedef</span>
+                <span style="color: var(--ocean-primary);">{{ user['xp'] }} / {{ goal }} XP</span>
+            </div>
+            <p style="font-size: 13px; color: var(--gray-text); margin-bottom: 12px; font-weight: 600;">
+                Günde {{ goal }} XP kazanarak İngilizce serini koru!
+            </p>
+            {% set xp_percent = [[((user['xp'] / goal) * 100)|round|int, 100]|min, 0]|max %}
+            <div class="sidebar-progress-track" style="height: 16px; margin-bottom: 10px;">
+                <div class="sidebar-progress-bar" style="width: {{ xp_percent }}%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 800;">
+                <span class="streak-badge-wrap {% if has_studied_today %}streak-active{% else %}streak-inactive{% endif %}" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <span class="streak-flame {% if has_studied_today %}streak-active{% else %}streak-inactive{% endif %}">🔥</span>
+                    <span style="color: {% if has_studied_today %}#ea580c{% else %}#94a3b8{% endif %}; font-weight: 800;">
+                        Seri: {{ user['streak_count'] if user['streak_count'] is defined and user['streak_count'] is not none else (user['streak'] or 0) }} Gün
+                    </span>
+                </span>
+                <span style="color: var(--gray-text);">%{{ xp_percent }} Hedef</span>
+            </div>
+        </div>
+
+        <!-- 🏆 Haftalık Lig (Leaderboard) Kartı -->
+        <div class="side-card leaderboard-card" id="weekly-league-card">
+            <div class="side-card-title">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    🏆 Haftalık Lig
+                </span>
+                <span class="leaderboard-user-rank-badge">#{{ user_rank }}</span>
+            </div>
+            <div class="leaderboard-list">
+                {% for lb_user in leaderboard %}
+                {% set is_active = (lb_user['id'] == user['id']) %}
+                <div class="leaderboard-item {% if is_active %}active-user{% endif %}">
+                    <div class="leaderboard-rank">
+                        {% if loop.index == 1 %}
+                            <span class="rank-medal" title="1. Sıra">🥇</span>
+                        {% elif loop.index == 2 %}
+                            <span class="rank-medal" title="2. Sıra">🥈</span>
+                        {% elif loop.index == 3 %}
+                            <span class="rank-medal" title="3. Sıra">🥉</span>
+                        {% else %}
+                            <span class="rank-number">{{ loop.index }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="leaderboard-avatar-wrap">
+                        {% if lb_user['avatar'] %}
+                            <img src="{{ lb_user['avatar'] }}" alt="{{ lb_user['name'] or lb_user['username'] }}" class="leaderboard-avatar" referrerpolicy="no-referrer">
+                        {% else %}
+                            <div class="leaderboard-avatar-placeholder">
+                                {{ (lb_user['name'] or lb_user['username'] or 'Ö')[0]|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="leaderboard-info">
+                        <span class="leaderboard-name" title="{{ lb_user['name'] or lb_user['username'] }}">
+                            {{ lb_user['name'] or lb_user['username'] }}
+                        </span>
+                        {% if is_active %}
+                            <span class="leaderboard-you-badge">Sen</span>
+                        {% endif %}
+                    </div>
+                    <div class="leaderboard-xp">
+                        <span class="xp-val">{{ lb_user['xp'] }}</span>
+                        <span class="xp-label">XP</span>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if user_rank > leaderboard|length %}
+                <div class="leaderboard-ellipsis">···</div>
+                <div class="leaderboard-item active-user user-outside-top">
+                    <div class="leaderboard-rank">
+                        <span class="rank-number">#{{ user_rank }}</span>
+                    </div>
+                    <div class="leaderboard-avatar-wrap">
+                        {% if user['avatar'] %}
+                            <img src="{{ user['avatar'] }}" alt="{{ user['name'] or user['username'] }}" class="leaderboard-avatar" referrerpolicy="no-referrer">
+                        {% else %}
+                            <div class="leaderboard-avatar-placeholder">
+                                {{ (user['name'] or user['username'] or 'Ö')[0]|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="leaderboard-info">
+                        <span class="leaderboard-name" title="{{ user['name'] or user['username'] }}">
+                            {{ user['name'] or user['username'] }}
+                        </span>
+                        <span class="leaderboard-you-badge">Sen</span>
+                    </div>
+                    <div class="leaderboard-xp">
+                        <span class="xp-val">{{ user['xp'] }}</span>
+                        <span class="xp-label">XP</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Curriculum Progress Card -->
+        <div class="side-card">
+            <div class="side-card-title">
+                <span>Müfredat Durumu</span>
+                <span style="color: var(--duo-gold);">{{ completed_total }} / {{ total_steps }} Adım</span>
+            </div>
+            {% set path_percent = [[((completed_total / (total_steps or 1)) * 100)|round|int, 100]|min, 0]|max %}
+            <div class="sidebar-progress-track" style="height: 16px; margin-bottom: 10px;">
+                <div class="sidebar-progress-bar gold-green" style="width: {{ path_percent }}%;"></div>
+            </div>
+            <div style="font-size: 12px; font-weight: 700; color: var(--gray-text);">
+                %{{ path_percent }} Ünite 1 Tamamlandı
+            </div>
+        </div>
+
+    </aside>
+</div>
+
+<!-- ============================================================== -->
+<!-- 🐻 YİĞİDOBEAR AI SOHBET BUTONU & AÇILIR PENCERESİ (WIDGET) -->
+<!-- ============================================================== -->
+<!-- Floating Chat Launcher Button -->
+<div class="chat-launcher-container" id="chat-launcher-container">
+    <div class="chat-launcher-tooltip" id="chat-launcher-tooltip">
+        {% if is_premium %}
+            Yiğido ile Sohbet Et (👑 PLUS) 💬
+        {% else %}
+            Yiğido AI Sohbet (👑 PLUS Özelliği) 💬
+        {% endif %}
+    </div>
+    <button type="button" 
+            class="chat-launcher-btn {% if is_premium %}launcher-premium{% else %}launcher-locked{% endif %}" 
+            id="chat-launcher-btn" 
+            onclick="toggleChatWidget()" 
+            aria-label="Yiğido ile Sohbet Et"
+            title="{% if is_premium %}Yiğido ile Sohbet Et (👑 PLUS) 💬{% else %}Yiğido AI Sohbet (👑 PLUS Özelliği) 💬{% endif %}">
+        <img src="{{ url_for('static', filename='images/mascot_happy.svg') }}" alt="Ayıcık Yiğido Sohbet" class="launcher-mascot-img">
+        <span class="chat-launcher-badge {% if is_premium %}badge-crown{% else %}badge-plus-tag{% endif %}">
+            {% if is_premium %}👑{% else %}PLUS{% endif %}
+        </span>
+    </button>
+</div>
+
+<!-- Interactive Chat Window (Widget) -->
+<div class="chat-widget-window {% if not is_premium %}widget-free-mode{% endif %}" id="chat-widget-window" aria-hidden="true">
+    <!-- Chat Header -->
+    <div class="chat-widget-header">
+        <div class="chat-header-user">
+            <div class="chat-avatar-wrap">
+                <img src="{{ url_for('static', filename='images/mascot_happy.svg') }}" alt="Yiğido" class="chat-header-avatar">
+                <span class="chat-online-indicator"></span>
+            </div>
+            <div class="chat-header-info">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <h3 class="chat-header-title">YiğidoBear AI Sohbet 🐻</h3>
+                    {% if is_premium %}
+                        <span class="chat-header-plus-badge">👑 PLUS</span>
+                    {% else %}
+                        <span class="chat-header-plus-badge lock-badge">👑 PLUS ÖZEL</span>
+                    {% endif %}
+                </div>
+                <div class="chat-header-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">
+                        {% if is_premium %}
+                            Çevrimiçi • Sınırsız PLUS Pratiği
+                        {% else %}
+                            Çevrimiçi • PLUS Davet & Deneme
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="chat-header-actions">
+            <button type="button" class="chat-header-btn" onclick="resetChatConversation()" title="Sohbeti Baştan Başlat">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <path d="M3 3v5h5"></path>
+                </svg>
+            </button>
+            <button type="button" class="chat-header-btn chat-close-btn" onclick="toggleChatWidget(false)" title="Kapat">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    {% if not is_premium %}
+    <!-- Free User PLUS Invitation Promo Strip -->
+    <div class="chat-plus-promo-strip" onclick="openReferralModal()" title="10 Arkadaşını Davet Et, 1 Ay Ücretsiz PLUS Kazan!">
+        <div class="promo-strip-icon">🎁</div>
+        <div class="promo-strip-text">
+            <strong>10 Arkadaşını Davet Et:</strong> 1 Ay Ücretsiz PLUS ile Sınırsız AI Sohbet Kazan!
+        </div>
+        <span class="promo-strip-arrow">➔</span>
+    </div>
+    {% endif %}
+
+    <!-- Chat Messages Stream -->
+    <div class="chat-messages-container" id="chat-messages-container">
+        <!-- Messages will be dynamically rendered here -->
+    </div>
+
+    <!-- Chat Options / Prepared Replies (3 Buttons) -->
+    <div class="chat-footer-area">
+        <div class="chat-options-label">
+            {% if is_premium %}
+                Cevap Seçenekleri:
+            {% else %}
+                Cevap & PLUS Seçenekleri:
+            {% endif %}
+        </div>
+        <div class="chat-options-tray" id="chat-options-tray">
+            <!-- 3 options buttons dynamically injected here -->
+        </div>
+    </div>
+</div>
+
+<!-- Ünite 1 Kılavuz (Guidebook) Modalı -->
+<div class="modal-overlay" id="unit-guide-modal">
+    <div class="modal-card guide-modal-card">
+        <div class="guide-modal-header">
+            <span class="guide-modal-badge">ÜNİTE 1 REHBERİ</span>
+            <div style="font-size: 38px; margin-bottom: 6px;">📖</div>
+            <h2 class="guide-modal-title">Ünite 1: Temel İletişim Rehberi</h2>
+            <p class="guide-modal-sub">İngilizce öğrenirken günlük hayatta en sık kullanacağın kalıplar ve pratik konuşma ipuçları:</p>
+        </div>
+
+        <div class="guide-phrases-grid">
+            <div class="guide-phrase-card">
+                <div class="guide-phrase-icon">👋</div>
+                <div class="guide-phrase-content">
+                    <span class="guide-phrase-en">Hello / Hi</span>
+                    <span class="guide-phrase-tr">Merhaba <span class="guide-phrase-note">(Resmi / Samimi)</span></span>
+                </div>
+            </div>
+
+            <div class="guide-phrase-card">
+                <div class="guide-phrase-icon">☀️</div>
+                <div class="guide-phrase-content">
+                    <span class="guide-phrase-en">Good morning / Good night</span>
+                    <span class="guide-phrase-tr">Günaydın / İyi geceler</span>
+                </div>
+            </div>
+
+            <div class="guide-phrase-card">
+                <div class="guide-phrase-icon">💬</div>
+                <div class="guide-phrase-content">
+                    <span class="guide-phrase-en">How are you? ➔ I am fine, thank you!</span>
+                    <span class="guide-phrase-tr">Nasılsın? ➔ İyiyim, teşekkürler!</span>
+                </div>
+            </div>
+
+            <div class="guide-phrase-card">
+                <div class="guide-phrase-icon">🤝</div>
+                <div class="guide-phrase-content">
+                    <span class="guide-phrase-en">Nice to meet you!</span>
+                    <span class="guide-phrase-tr">Tanıştığıma memnun oldum!</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; width: 100%;">
+            <button class="btn-3d btn-blue" style="width: 100%; padding: 13px; font-size: 14px; font-weight: 800;" onclick="closeUnitGuideModal()">
+                ✓ Anladım / Kapat
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Out of Hearts Warning Modal -->
+<div class="modal-overlay" id="no-hearts-modal">
+    <div class="modal-card">
+        <img src="{{ url_for('static', filename='images/mascot_sad.svg') }}" alt="Küçük Ayı Üzgün" class="modal-mascot">
+        <h2 class="modal-title" style="color: var(--duo-red);">Canın Kalmadı!</h2>
+        <p class="modal-subtitle">Yeni bir derse başlamak için en az 1 cana ihtiyacın var. 15 dakikada 1 can yenilenir veya Plus ile beklemeden sınırsız çözebilirsin!</p>
+        
+        <div class="heart-status-banner recharging" style="margin: 14px 0;">
+            <div class="timer-badge-content">
+                <span class="timer-icon hourglass-spin">⏳</span>
+                <span class="timer-text" id="no-hearts-timer-text">Sonraki can: --:--</span>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 8px;">
+            <button class="btn-plus-gold" onclick="closeNoHeartsNotice(); openPlusModal();">
+                <span class="plus-sparkle">⚡</span> Plus ile Sınırsız Devam Et
+            </button>
+            <button class="btn-3d btn-white" onclick="closeNoHeartsNotice()">
+                Bekleyeceğim
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- YiğidoBear Plus Promo Modal -->
+<div class="modal-overlay" id="plus-promo-modal">
+    <div class="modal-card plus-modal-card">
+        <div class="plus-modal-header">
+            <span class="plus-badge-tag">ÖĞRENCİLERE ÖZEL</span>
+            <img src="{{ url_for('static', filename='images/mascot_happy.svg') }}" alt="Yiğido Plus" class="modal-mascot" style="width: 80px; height: 80px; margin-bottom: 6px;">
+            <h2 class="modal-title" style="font-size: 22px; color: #1e293b; margin-bottom: 4px;">YiğidoBear Plus ile Asla Durma!</h2>
+            <p class="modal-subtitle" style="font-size: 13px; color: #64748b; margin-bottom: 0;">Sınırları kaldır, dil öğrenme hızını ikiye katla! 🚀</p>
+        </div>
+
+        <div class="plus-features-list">
+            <div class="plus-feature-item">
+                <div class="plus-feature-icon">❤️</div>
+                <div class="plus-feature-text">
+                    <div class="plus-feature-title">Sonsuz Can</div>
+                    <div class="plus-feature-desc">Can kaybetme korkusu olmadan dilediğin kadar pratik yap.</div>
+                </div>
+            </div>
+
+            <div class="plus-feature-item">
+                <div class="plus-feature-icon">🚫</div>
+                <div class="plus-feature-text">
+                    <div class="plus-feature-title">Reklamsız Ders</div>
+                    <div class="plus-feature-desc">Dikkat dağıtıcı hiçbir şey olmadan %100 odaklan.</div>
+                </div>
+            </div>
+
+            <div class="plus-feature-item">
+                <div class="plus-feature-icon">🎯</div>
+                <div class="plus-feature-text">
+                    <div class="plus-feature-title">Özel Hata Pratikleri</div>
+                    <div class="plus-feature-desc">Zorlandığın kelime ve gramerleri yapay zekayla pekiştir.</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+            <button class="btn-plus-gold" style="font-size: 14px; padding: 13px;" onclick="handlePlusExplore()">
+                ✨ Plus'ı Keşfet
+            </button>
+            <button class="btn-3d btn-white" style="font-size: 12px; padding: 10px;" onclick="closePlusModal()">
+                Şimdilik Hayır
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 🎁 Referans & 10 Davet Ödülü Modalı -->
+<div class="modal-overlay" id="referral-modal" onclick="handleReferralOverlayClick(event)">
+    <div class="modal-card referral-modal-card">
+        <button type="button" class="modal-close-x" onclick="closeReferralModal()" aria-label="Kapat">✕</button>
+
+        <div class="referral-modal-header">
+            <div class="referral-modal-badge">ÖZEL DAVET PROGRAMI</div>
+            <div class="referral-modal-gift-icon">🎁</div>
+            <h2 class="modal-title" style="font-size: 22px; color: var(--text-heading); margin-bottom: 6px;">1 Ay Ücretsiz PLUS Kazan!</h2>
+            <p class="modal-subtitle" style="font-size: 13.5px; color: var(--gray-text); line-height: 1.45;">
+                Arkadaşlarını davet et, birlikte İngilizce öğrenin! 10 arkadaşın senin bağlantınla kaydolduğunda anında <strong>1 Ay Sınırsız Can & PLUS</strong> kazanırsın.
+            </p>
+        </div>
+
+        {% set current_invites = user['invited_count'] or 0 %}
+        {% set current_percent = [[((current_invites / 10) * 100)|round|int, 100]|min, 0]|max %}
+        <div class="referral-progress-card">
+            <div class="referral-progress-header">
+                <span class="referral-progress-title">Davet İlerlemen</span>
+                <span class="referral-progress-badge" id="referral-progress-badge">{{ current_invites }} / 10 Davet</span>
+            </div>
+            <div class="referral-progress-track">
+                <div class="referral-progress-bar" id="referral-progress-bar" style="width: {{ current_percent }}%;"></div>
+            </div>
+            <div class="referral-progress-footer">
+                {% if current_invites >= 10 or is_premium %}
+                    <span class="referral-reward-achieved">🎉 Tebrikler! 10 daveti tamamladın, PLUS üyeliğin aktif! 👑</span>
+                {% else %}
+                    <span class="referral-reward-hint">Ücretsiz PLUS üyeliği için son <strong>{{ 10 - current_invites }}</strong> davet kaldı! 🚀</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="referral-copy-section">
+            <label class="referral-copy-label" for="referral-link-input">Senin Özel Davet Bağlantın:</label>
+            <div class="referral-copy-row">
+                <input type="text" id="referral-link-input" class="referral-link-field" readonly 
+                       value="{{ request.url_root }}register?ref={{ user['referral_code'] }}">
+                <button type="button" class="btn-3d btn-blue btn-copy-action" id="btn-copy-ref" onclick="copyReferralLink()">
+                    <span id="copy-icon">📋</span>
+                    <span id="copy-text">Linki Kopyala</span>
+                </button>
+            </div>
+            <p class="referral-copy-note" id="referral-copy-note">
+                Bağlantıyı kopyalayıp WhatsApp veya sosyal medyada paylaşabilirsin.
+            </p>
+        </div>
+
+        <button type="button" class="btn-3d btn-white" style="width: 100%; margin-top: 14px; font-size: 13px;" onclick="closeReferralModal()">
+            Kapat
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Hearts Regeneration Countdown Timer & Plus Modal
+    let heartRemainingSec = {{ heart_remaining_seconds|default(0) }};
+    let isHeartsFull = {{ 'true' if is_hearts_full else 'false' }};
+    let currentHearts = {{ user['hearts'] }};
+
+    function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function updateTimerUI() {
+        const bannerEl = document.getElementById('dashboard-heart-timer-banner');
+        const noHeartsTimerEl = document.getElementById('no-hearts-timer-text');
+        const headerTimerEl = document.getElementById('modal-heart-timer-text');
+
+        if (isHeartsFull || currentHearts >= 5) {
+            if (bannerEl) {
+                bannerEl.className = 'heart-status-banner full';
+                bannerEl.innerHTML = `
+                    <div class="timer-badge-content">
+                        <span class="timer-icon">✨</span>
+                        <span class="timer-text">Canlar Dolu</span>
+                    </div>
+                `;
+            }
+            if (noHeartsTimerEl) noHeartsTimerEl.textContent = 'Canlar Dolu';
+            if (headerTimerEl) headerTimerEl.textContent = 'Canlar Dolu';
+        } else {
+            const timeStr = `Sonraki can: ${formatTime(heartRemainingSec)}`;
+            if (bannerEl) {
+                bannerEl.className = 'heart-status-banner recharging';
+                bannerEl.innerHTML = `
+                    <div class="timer-badge-content">
+                        <span class="timer-icon hourglass-spin">⏳</span>
+                        <span class="timer-text" id="dashboard-heart-timer-text">${timeStr}</span>
+                    </div>
+                `;
+            }
+            if (noHeartsTimerEl) noHeartsTimerEl.textContent = timeStr;
+            if (headerTimerEl) headerTimerEl.textContent = timeStr;
+        }
+    }
+
+    // Initial render
+    updateTimerUI();
+
+    // Tick every 1 second
+    setInterval(async () => {
+        if (!isHeartsFull && currentHearts < 5) {
+            if (heartRemainingSec > 0) {
+                heartRemainingSec--;
+                updateTimerUI();
+            } else {
+                // Time up! Poll backend for regenerated heart
+                await syncHeartStatus();
+            }
+        }
+    }, 1000);
+
+    async function syncHeartStatus() {
+        try {
+            const res = await fetch('/api/heart-status');
+            const data = await res.json();
+            currentHearts = data.hearts;
+            heartRemainingSec = data.remaining_seconds;
+            isHeartsFull = data.is_full;
+
+            // Update hearts count & visual pips
+            const countEl = document.getElementById('dashboard-hearts-count');
+            if (countEl) countEl.textContent = `${currentHearts} / 5`;
+
+            const pipsEl = document.getElementById('dashboard-hearts-pips');
+            if (pipsEl) {
+                let html = '';
+                for (let i = 1; i <= 5; i++) {
+                    html += `<span class="heart-pip ${i > currentHearts ? 'lost' : ''}">❤️</span>`;
+                }
+                pipsEl.innerHTML = html;
+            }
+
+            // Top navbar hearts count
+            const topVal = document.getElementById('header-hearts-val');
+            if (topVal) topVal.textContent = currentHearts;
+
+            updateTimerUI();
+        } catch (e) {
+            console.error('Failed to sync hearts:', e);
+        }
+    }
+
+    function openNoHeartsNotice() {
+        SoundEffects.playTap();
+        document.getElementById('no-hearts-modal').classList.add('open');
+    }
+
+    function closeNoHeartsNotice() {
+        document.getElementById('no-hearts-modal').classList.remove('open');
+    }
+
+    // Guidebook Modal Handlers
+    function openUnitGuideModal() {
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playTap) {
+            SoundEffects.playTap();
+        }
+        const modal = document.getElementById('unit-guide-modal');
+        if (modal) modal.classList.add('open');
+    }
+
+    function closeUnitGuideModal() {
+        const modal = document.getElementById('unit-guide-modal');
+        if (modal) modal.classList.remove('open');
+    }
+
+    // Plus Promo Modal Handlers
+    function openPlusModal() {
+        SoundEffects.playTap();
+        const modal = document.getElementById('plus-promo-modal');
+        if (modal) modal.classList.add('open');
+    }
+
+    function closePlusModal() {
+        const modal = document.getElementById('plus-promo-modal');
+        if (modal) modal.classList.remove('open');
+    }
+
+    function handlePlusExplore() {
+        SoundEffects.playComplete();
+        alert('🎉 Harika bir tercih! YiğidoBear Plus lansman aşamasındadır. Çok yakında sonsuz can ve özel pratiklerle hizmetinizde olacak! 🐻⚡');
+        closePlusModal();
+    }
+
+    // Referral & 10 Invite Modal Handlers
+    function openReferralModal() {
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playTap) {
+            SoundEffects.playTap();
+        }
+        const modal = document.getElementById('referral-modal');
+        if (modal) modal.classList.add('open');
+
+        const input = document.getElementById('referral-link-input');
+        const refCode = "{{ user['referral_code'] }}";
+        if (input && refCode) {
+            input.value = window.location.origin + '/register?ref=' + refCode;
+        }
+    }
+
+    function closeReferralModal() {
+        const modal = document.getElementById('referral-modal');
+        if (modal) modal.classList.remove('open');
+    }
+
+    function handleReferralOverlayClick(e) {
+        if (e.target && e.target.id === 'referral-modal') {
+            closeReferralModal();
+        }
+    }
+
+    async function copyReferralLink() {
+        const input = document.getElementById('referral-link-input');
+        const textToCopy = input ? input.value : (window.location.origin + '/register?ref={{ user["referral_code"] }}');
+        const btnText = document.getElementById('copy-text');
+        const btnIcon = document.getElementById('copy-icon');
+        const note = document.getElementById('referral-copy-note');
+
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(textToCopy);
+            } else {
+                input.select();
+                document.execCommand('copy');
+            }
+            if (typeof SoundEffects !== 'undefined' && SoundEffects.playCorrect) {
+                SoundEffects.playCorrect();
+            }
+            if (btnText) btnText.textContent = 'Kopyalandı!';
+            if (btnIcon) btnIcon.textContent = '✓';
+            if (note) {
+                note.textContent = '🎉 Davet bağlantısı başarıyla kopyalandı!';
+                note.style.color = 'var(--duo-green-dark)';
+                note.style.fontWeight = '700';
+            }
+            setTimeout(() => {
+                if (btnText) btnText.textContent = 'Linki Kopyala';
+                if (btnIcon) btnIcon.textContent = '📋';
+                if (note) {
+                    note.textContent = 'Bağlantıyı kopyalayıp WhatsApp veya sosyal medyada paylaşabilirsin.';
+                    note.style.color = '';
+                    note.style.fontWeight = '';
+                }
+            }, 2500);
+        } catch (err) {
+            console.error('Clipboard copy failed:', err);
+            if (input) {
+                input.select();
+                document.execCommand('copy');
+                if (btnText) btnText.textContent = 'Kopyalandı!';
+                setTimeout(() => {
+                    if (btnText) btnText.textContent = 'Linki Kopyala';
+                }, 2000);
+            }
+        }
+    }
+
+    async function resetDemoProgress() {
+        if (!confirm('Tüm ders ilerlemesini ve XP puanını sıfırlamak istiyor musunuz?')) return;
+        try {
+            const res = await fetch('/api/reset-progress', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                SoundEffects.playTap();
+                location.reload();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function scrollToUnit(unitId) {
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playTap) {
+            SoundEffects.playTap();
+        }
+        const el = document.getElementById(unitId);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function showUnitLockedToast(message) {
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playTap) {
+            SoundEffects.playTap();
+        }
+        let toast = document.getElementById('unit-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'unit-toast';
+            toast.className = 'unit-toast-notice';
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = `<span style="font-size: 22px;">🔒</span> <span>${message || "Önceki üniteyi ve Boss Sınavı'nı tamamlamalısın!"}</span>`;
+        toast.classList.add('show');
+        if (window._unitToastTimer) clearTimeout(window._unitToastTimer);
+        window._unitToastTimer = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3200);
+    }
+
+    // Gerçek Kıvrımlı S-Curve Patika SVG Çizim Fonksiyonu
+    function renderSnakePath() {
+        const container = document.querySelector('.path-container');
+        const svg = document.getElementById('snake-path-svg');
+        if (!container || !svg) return;
+        
+        const nodes = container.querySelectorAll('.path-node');
+        if (nodes.length < 2) return;
+
+        const cRect = container.getBoundingClientRect();
+        svg.setAttribute('width', cRect.width);
+        svg.setAttribute('height', cRect.height);
+
+        const points = [];
+        nodes.forEach(node => {
+            const nRect = node.getBoundingClientRect();
+            points.push({
+                x: nRect.left + nRect.width / 2 - cRect.left,
+                y: nRect.top + nRect.height / 2 - cRect.top
+            });
+        });
+
+        let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[i];
+            const p1 = points[i + 1];
+            const dy = p1.y - p0.y;
+            // Dikey teğetli akıcı kübik Bezier eğrisi (S-Curve)
+            const cp1x = p0.x.toFixed(1);
+            const cp1y = (p0.y + dy * 0.5).toFixed(1);
+            const cp2x = p1.x.toFixed(1);
+            const cp2y = (p1.y - dy * 0.5).toFixed(1);
+            d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+        }
+
+        const pathBg = document.getElementById('snake-path-bg');
+        const pathDashed = document.getElementById('snake-path-dashed');
+        if (pathBg) pathBg.setAttribute('d', d);
+        if (pathDashed) pathDashed.setAttribute('d', d);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        renderSnakePath();
+        setTimeout(renderSnakePath, 100);
+        setTimeout(renderSnakePath, 400);
+    });
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(renderSnakePath);
+    });
+</script>
+<!-- YiğidoBear AI Sohbet Modülü Script & PLUS Entegrasyonu -->
+<script>
+    window.IS_USER_PREMIUM = {{ 'true' if is_premium else 'false' }};
+    window.USER_REFERRAL_CODE = "{{ user['referral_code'] or '' }}";
+    window.USER_INVITED_COUNT = {{ user['invited_count'] or 0 }};
+</script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

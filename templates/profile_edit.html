@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Profili Düzenle - YiğidoBear{% endblock %}
+
+{% block content %}
+<div class="profile-container" style="max-width: 680px;">
+    <div class="side-card" style="padding: 36px 32px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 28px; border-bottom: 2px solid var(--ocean-border); padding-bottom: 18px;">
+            <a href="{{ url_for('profile') }}" class="btn-exit" style="padding: 4px;" title="Geri Dön">
+                ←
+            </a>
+            <div>
+                <h1 style="font-size: 24px; font-weight: 900; color: var(--text-heading);">Profili Düzenle</h1>
+                <p style="font-size: 14px; color: var(--gray-text); font-weight: 600;">Görünen adınızı, günlük hedefinizi ve biyografinizi güncelleyin.</p>
+            </div>
+        </div>
+
+        <form action="{{ url_for('profile_edit') }}" method="POST" class="edit-profile-form">
+            <!-- Display Name -->
+            <div class="form-group">
+                <label for="name" class="form-label">Görünen Ad</label>
+                <input type="text" id="name" name="name" class="form-input" value="{{ user['name'] or user['username'] }}" required maxlength="40">
+                <span class="form-hint">Diğer kullanıcıların ve liderlik tablosunun gördüğü isim.</span>
+            </div>
+
+            <!-- Daily XP Goal -->
+            <div class="form-group">
+                <label class="form-label">Günlük XP Hedefi</label>
+                <div class="goal-options-grid">
+                    <label class="goal-option-card">
+                        <input type="radio" name="daily_goal" value="10" {% if user['daily_goal'] == 10 %}checked{% endif %}>
+                        <div class="goal-card-box">
+                            <span class="goal-card-xp">10 XP</span>
+                            <span class="goal-card-tag">Rahat (Günde 5 dk)</span>
+                        </div>
+                    </label>
+
+                    <label class="goal-option-card">
+                        <input type="radio" name="daily_goal" value="20" {% if user['daily_goal'] == 20 %}checked{% endif %}>
+                        <div class="goal-card-box">
+                            <span class="goal-card-xp">20 XP</span>
+                            <span class="goal-card-tag">Düzenli (Günde 10 dk)</span>
+                        </div>
+                    </label>
+
+                    <label class="goal-option-card">
+                        <input type="radio" name="daily_goal" value="50" {% if not user['daily_goal'] or user['daily_goal'] == 50 %}checked{% endif %}>
+                        <div class="goal-card-box">
+                            <span class="goal-card-xp">50 XP</span>
+                            <span class="goal-card-tag">Yoğun (Günde 15+ dk)</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Bio / Goal -->
+            <div class="form-group">
+                <label for="bio" class="form-label">Kısa Biyografi / Öğrenme Hedefi</label>
+                <textarea id="bio" name="bio" class="form-textarea" rows="3" maxlength="150" placeholder="Örn: Bu yıl İngilizce konuşmaya başlayacağım!">{{ user['bio'] or '' }}</textarea>
+                <span class="form-hint">Maksimum 150 karakter.</span>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 12px; margin-top: 32px;">
+                <button type="submit" class="btn-3d btn-blue" style="flex: 2;">
+                    💾 Değişiklikleri Kaydet
+                </button>
+                <a href="{{ url_for('profile') }}" class="btn-3d btn-white" style="flex: 1;">
+                    İptal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
