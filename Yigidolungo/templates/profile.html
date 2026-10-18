@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Profilim - YiğidoBear{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Profile Hero Card -->
+    <div class="profile-hero-card">
+        <div class="profile-header-top">
+            <div class="profile-avatar-wrapper">
+                {% if user['avatar'] %}
+                    <img src="{{ user['avatar'] }}" alt="{{ user['name'] }}" class="profile-main-avatar" referrerpolicy="no-referrer">
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/mascot_happy.svg') }}" alt="Ayıcık Yiğido" class="profile-main-avatar">
+                {% endif %}
+                <span class="avatar-badge">🌊</span>
+            </div>
+
+            <div class="profile-identity">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <h1 class="profile-name">{{ user['name'] or user['username'] }}</h1>
+                    {% if user['is_premium'] %}
+                        <span class="user-role-badge user-role-plus">👑 YiğidoBear PLUS</span>
+                    {% else %}
+                        <span class="user-role-badge">İngilizce Kaşifi</span>
+                    {% endif %}
+                </div>
+                <p class="profile-email">{{ user['email'] or 'ogrenci@yigidobear.com' }}</p>
+                <p class="profile-bio">
+                    "{{ user['bio'] or 'Her gün yeni bir İngilizce kelime öğreniyorum! 🌊🐻' }}"
+                </p>
+            </div>
+
+            <div class="profile-actions-top">
+                <a href="{{ url_for('profile_edit') }}" class="btn-3d btn-blue" style="font-size: 13px; padding: 10px 18px;">
+                    ✏️ Profili Düzenle
+                </a>
+            </div>
+        </div>
+
+        {% if request.args.get('updated') == '1' %}
+        <div class="oauth-alert" style="background: #ecfdf5; border-color: #a7f3d0; color: #047857; margin-top: 18px;">
+            <strong>✓ Profil Bilgileriniz Başarıyla Güncellendi!</strong>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Stats & Progress Section -->
+    <div class="profile-grid">
+        <!-- Main Stats Card -->
+        <div class="side-card" style="padding: 24px;">
+            <h2 class="side-card-title">
+                <span>İstatistikler & Başarılar</span>
+                <span style="font-size: 13px; color: var(--ocean-primary); font-weight: 800;">Ünite 1 İlerlemesi</span>
+            </h2>
+
+            <div class="profile-stats-cards">
+                <div class="profile-stat-box">
+                    <div class="stat-box-icon" style="background: var(--ocean-soft-bg); color: var(--ocean-primary);">⚡</div>
+                    <div class="stat-box-content">
+                        <span class="stat-box-val">{{ user['xp'] }}</span>
+                        <span class="stat-box-lbl">Toplam XP</span>
+                    </div>
+                </div>
+
+                <div class="profile-stat-box">
+                    <div class="stat-box-icon" style="background: #fef3c7; color: #d97706;">🔥</div>
+                    <div class="stat-box-content">
+                        <span class="stat-box-val">{{ user['streak'] }} Gün</span>
+                        <span class="stat-box-lbl">Günlük Seri</span>
+                    </div>
+                </div>
+
+                <div class="profile-stat-box">
+                    <div class="stat-box-icon" style="background: #ffe4e6; color: #e11d48;">❤️</div>
+                    <div class="stat-box-content">
+                        <span class="stat-box-val">{% if user['is_premium'] %}∞ (Sınırsız){% else %}{{ user['hearts'] }} / 5{% endif %}</span>
+                        <span class="stat-box-lbl">Mevcut Can</span>
+                    </div>
+                </div>
+
+                <div class="profile-stat-box">
+                    <div class="stat-box-icon" style="background: #e0f2fe; color: #0284c7;">📚</div>
+                    <div class="stat-box-content">
+                        <span class="stat-box-val">{{ stats['completed_topics'] }} / 7</span>
+                        <span class="stat-box-lbl">Konu Tamamlandı</span>
+                    </div>
+                </div>
+
+                <div class="profile-stat-box">
+                    <div class="stat-box-icon" style="background: #fef3c7; color: #b45309;">🏆</div>
+                    <div class="stat-box-content">
+                        <span class="stat-box-val">{{ stats['completed_exams'] }} / 6</span>
+                        <span class="stat-box-lbl">Sınav Başarısı</span>
+                    </div>
+                </div>
+
+                <div class="profile-stat-box">
+                    <div class="stat-box-icon" style="background: #ecfdf5; color: #059669;">🎯</div>
+                    <div class="stat-box-content">
+                        <span class="stat-box-val">{{ user['daily_goal'] or 50 }} XP</span>
+                        <span class="stat-box-lbl">Günlük Hedef</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unit Progress Bar -->
+            <div style="margin-top: 26px;">
+                <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 14px; margin-bottom: 8px;">
+                    <span>Genel Müfredat İlerlemesi (13 Adım)</span>
+                    <span style="color: var(--ocean-primary);">%{{ stats['completion_rate'] }}</span>
+                </div>
+                <div class="lesson-progress-track" style="height: 18px;">
+                    <div class="lesson-progress-bar" style="width: {{ stats['completion_rate'] }}%;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-text); font-weight: 700; margin-top: 6px;">
+                    <span>{{ stats['total_completed'] }} adım tamamlandı</span>
+                    <span>{{ stats['total_lessons'] - stats['total_completed'] }} adım kaldı</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Badges & Mascot Encouragement Card -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="side-card mascot-card" style="padding: 22px;">
+                <img src="{{ url_for('static', filename='images/mascot_cheer.svg') }}" alt="Ayıcık" class="mascot-avatar" style="width: 80px; height: 80px;">
+                <div class="mascot-speech-bubble">
+                    <strong>Ayıcık Yiğido:</strong><br>
+                    "Profilin her geçen gün parlıyor! Ünite 1'deki 6 sınavı geçerek Seviye Atlama Kupası'nı kazanmaya çok yakınsın! 👍"
+                </div>
+            </div>
+
+            <div class="side-card" style="padding: 22px;">
+                <h3 class="side-card-title">Rozetlerim</h3>
+                <div class="badges-row">
+                    <div class="badge-item {% if stats['total_completed'] > 0 %}unlocked{% else %}locked{% endif %}" title="İlk Dersi Tamamla">
+                        <span class="badge-icon">🌟</span>
+                        <span class="badge-title">İlk Adım</span>
+                    </div>
+                    <div class="badge-item {% if stats['completed_exams'] > 0 %}unlocked{% else %}locked{% endif %}" title="En az 1 Sınavı Geç">
+                        <span class="badge-icon">🏆</span>
+                        <span class="badge-title">Sınav Fatihi</span>
+                    </div>
+                    <div class="badge-item {% if user['streak'] >= 3 %}unlocked{% else %}locked{% endif %}" title="3 Günlük Seri Yap">
+                        <span class="badge-icon">🔥</span>
+                        <span class="badge-title">Ateş Serisi</span>
+                    </div>
+                    <div class="badge-item {% if stats['completed_exams'] >= 6 %}unlocked{% else %}locked{% endif %}" title="Boss Sınavını Geç">
+                        <span class="badge-icon">👑</span>
+                        <span class="badge-title">Büyük Şampiyon</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

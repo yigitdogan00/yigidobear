@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lesson.title }} - YiğidoBear{% endblock %}
+
+{% block header %}
+<!-- Ocean Blue Distraction-Free Lesson Top Bar -->
+<div class="lesson-top-bar">
+    <button class="btn-exit" id="exit-lesson-btn" title="Dersten Çık">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    </button>
+
+    <div class="lesson-progress-track">
+        <div class="lesson-progress-bar" id="lesson-progress" style="width: 0%;"></div>
+    </div>
+
+    {% if user and user.is_premium %}
+    <div class="lesson-hearts-display lesson-hearts-premium" title="Sınırsız Can (YiğidoBear Plus)">
+        <span class="heart-icon">❤️</span>
+        <span class="heart-infinity">∞</span>
+    </div>
+    {% else %}
+    <div class="lesson-hearts-display" title="Kalan Canın">
+        <span class="heart-icon">❤️</span>
+        <span id="lesson-hearts-count">{{ user['hearts'] if user else 5 }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Streak Indicator -->
+    <div class="lesson-streak-display stat-streak {% if has_studied_today %}streak-active{% else %}streak-inactive{% endif %}"
+        title="{% if has_studied_today %}Harika! Bugün serini korudun: {{ streak_count }} gün{% else %}Bu dersi tamamlayarak bugünün serisini yak! (Seri: {{ streak_count }} gün){% endif %}" style="margin-left: 6px;">
+        <span class="stat-icon streak-flame {% if has_studied_today %}streak-active{% else %}streak-inactive{% endif %}">🔥</span>
+        <span id="lesson-streak-count">{{ streak_count }}</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="lesson-page">
+    <!-- Question Workspace -->
+    <main class="lesson-content" id="question-workspace">
+        <div style="text-align: center; padding: 60px 0;">
+            <p style="font-size: 18px; font-weight: 700; color: var(--gray-text);">Ders yükleniyor...</p>
+        </div>
+    </main>
+
+    <!-- Bottom Action & Feedback Drawer (Duolingo Style Modern Feedback Bar) -->
+    <footer class="lesson-footer quiz-feedback-bar" id="lesson-footer">
+        <div class="footer-inner quiz-feedback-container">
+            <div class="feedback-section" id="feedback-section">
+                <!-- Dynamically injected upon answering with Bear reactions -->
+            </div>
+            <button class="btn-3d btn-blue btn-disabled" id="action-button">
+                KONTROL ET
+            </button>
+        </div>
+    </footer>
+</div>
+
+<!-- Lesson Completed Modal -->
+<div class="modal-overlay" id="lesson-complete-modal">
+    <div class="modal-card">
+        {% if lesson.is_exam %}
+            <img src="{{ url_for('static', filename='images/mascot_cheer.svg') }}" alt="Ayıcık Yiğido Şampiyon" class="modal-mascot">
+            <h2 class="modal-title" style="color: #b45309;">
+                {% if lesson.order_num == 13 %}👑 BOSS SINAVI GEÇİLDİ!{% else %}🏆 SINAV BAŞARIYLA TAMAMLANDI!{% endif %}
+            </h2>
+            <p class="modal-subtitle">
+                {% if lesson.order_num == 13 %}
+                    Muazzam bir zafer! Ünite 1 Seviye Atlama Kupası'nı kazandın ve A1 seviyesine ulaştın! 🌟🐻
+                {% else %}
+                    Tebrikler! Değerlendirme sınavını üstün başarıyla geçtin ve sonraki konunun kilidini açtın!
+                {% endif %}
+            </p>
+        {% else %}
+            <img src="{{ url_for('static', filename='images/mascot_cheer.svg') }}" alt="Ayıcık Yiğido Kutluyor" class="modal-mascot">
+            <h2 class="modal-title">Ders Tamamlandı!</h2>
+            <p class="modal-subtitle">Harika bir iş çıkardın! Küçük Ayıcık seninle gurur duyuyor. 🌟🐻</p>
+        {% endif %}
+        
+        <div class="reward-badges">
+            <div class="reward-badge">
+                <span class="reward-value" id="modal-xp-earned">+{{ lesson.xp_reward }} XP</span>
+                <span class="reward-label">Kazanılan XP</span>
+            </div>
+            <div class="reward-badge">
+                <span class="reward-value" id="modal-accuracy">%100</span>
+                <span class="reward-label">Doğruluk</span>
+            </div>
+            <div class="reward-badge">
+                <span class="reward-value" id="modal-streak-val">🔥 {{ streak_count }}</span>
+                <span class="reward-label">Günlük Seri</span>
+            </div>
+        </div>
+
+        <a href="{{ url_for('dashboard') }}" class="btn-3d btn-blue" style="width: 100%;">
+            🎉 Dashboard'a Dön
+        </a>
+    </div>
+</div>
+
+<!-- Demo Conversion Modal (Triggered when demo user completes question 3) -->
+<div class="modal-overlay" id="demo-conversion-modal">
+    <div class="modal-card">
+        <img src="{{ url_for('static', filename='images/mascot_cheer.svg') }}" alt="Ayıcık Yiğido" class="modal-mascot">
+        <h2 class="modal-title" style="color: var(--ocean-primary);">Harika Gidiyorsun!</h2>
+        <p class="modal-subtitle" style="font-size: 16px; color: #475569; line-height: 1.5; margin-top: 8px;">
+            İlerleyişini kaydetmek ve tüm derslerin kilidini açmak için Google ile giriş yap.
+        </p>
+        
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 24px;">
+            <a href="{{ url_for('login_google') }}" class="btn-google-login" style="box-shadow: 0 4px 0 #cbd5e1;">
+                <svg class="google-icon" viewBox="0 0 24 24" width="22" height="22">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Google ile Giriş Yap</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Out of Hearts Modal -->
+<div class="modal-overlay" id="lesson-gameover-modal">
+    <div class="modal-card">
+        <img src="{{ url_for('static', filename='images/mascot_sad.svg') }}" alt="Küçük Ayı Üzgün" class="modal-mascot">
+        <h2 class="modal-title" style="color: var(--duo-red);">Canların Bitti!</h2>
+        <p class="modal-subtitle">Tüm canlarını tükettin. Her 15 dakikada 1 canın otomatik dolar veya Plus ile beklemeden sınırsız çözebilirsin! 🐻</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+            <button class="btn-plus-gold" onclick="openGlobalPlusModal()">
+                <span class="plus-sparkle">⚡</span> Plus ile Sınırsız Devam Et
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="btn-3d btn-white">
+                Dashboard'a Dön
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Exit Confirmation Modal -->
+<div class="modal-overlay" id="exit-confirm-modal">
+    <div class="modal-card">
+        <img src="{{ url_for('static', filename='images/mascot_sad.svg') }}" alt="Küçük Ayıcık" class="modal-mascot">
+        <h2 class="modal-title">Ayrılmak İstiyor musun?</h2>
+        <p class="modal-subtitle">Şimdi çıkarsan bu dersteki ilerlemen kaydedilmeyecek.</p>
+        
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <a href="{{ url_for('dashboard') }}" class="btn-3d btn-red">
+                Çık
+            </a>
+            <button class="btn-3d btn-blue" id="cancel-exit-btn">
+                Öğrenmeye Devam Et
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Confetti Canvas -->
+<canvas id="confetti-canvas"></canvas>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/quiz.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const lessonId = {{ lesson.id }};
+        const initialHearts = {{ user.hearts if user else 5 }};
+        const isDemo = {{ 'true' if is_demo else 'false' }};
+        const isPremium = {{ 'true' if user and user.is_premium else 'false' }};
+
+        // Initialize Quiz
+        const quiz = new LessonQuiz(lessonId, initialHearts, isDemo, isPremium);
+
+        // Exit button logic
+        const exitBtn = document.getElementById('exit-lesson-btn');
+        const exitModal = document.getElementById('exit-confirm-modal');
+        const cancelExitBtn = document.getElementById('cancel-exit-btn');
+
+        if (exitBtn && exitModal) {
+            exitBtn.addEventListener('click', () => {
+                SoundEffects.playTap();
+                exitModal.classList.add('open');
+            });
+        }
+
+        if (cancelExitBtn && exitModal) {
+            cancelExitBtn.addEventListener('click', () => {
+                SoundEffects.playTap();
+                exitModal.classList.remove('open');
+            });
+        }
+    });
+</script>
+{% endblock %}

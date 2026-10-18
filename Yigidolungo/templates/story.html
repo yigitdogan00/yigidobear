@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}{{ story.title }} ({{ story.level }}) - YiğidoBear Hikayeleri{% endblock %}
+
+{% block header %}
+<!-- Minimalist, Distraction-Free Story Top Bar -->
+<div class="lesson-top-bar story-top-bar">
+    <a href="{{ url_for('stories_library', level=story.level) }}" class="btn-exit" id="exit-story-btn" title="Kütüphaneye Dön">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    </a>
+
+    <!-- 3-Step Progress Indicator -->
+    <div class="story-stepper-nav">
+        <div class="story-step-pill active" id="pill-step-1">
+            <span class="step-num">1</span>
+            <span class="step-name">Giriş</span>
+        </div>
+        <div class="story-stepper-line" id="line-step-1"></div>
+        <div class="story-step-pill" id="pill-step-2">
+            <span class="step-num">2</span>
+            <span class="step-name">Gelişme & Test</span>
+        </div>
+        <div class="story-stepper-line" id="line-step-2"></div>
+        <div class="story-step-pill" id="pill-step-3">
+            <span class="step-num">3</span>
+            <span class="step-name">Sonuç</span>
+        </div>
+    </div>
+
+    <!-- XP Reward Tag -->
+    <div class="story-xp-header-tag" title="Hikaye Tamamlama Ödülü">
+        <span class="xp-icon">⚡</span>
+        <span class="xp-val">+{{ story.xp_reward or 20 }} XP</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="story-flow-container">
+    <!-- Story Title Banner -->
+    <div class="story-header-card">
+        <div class="story-icon-badge">
+            <span class="story-main-icon">{{ story.icon or '☕' }}</span>
+        </div>
+        <div class="story-header-text">
+            <div class="story-meta-tags">
+                <span class="story-unit-badge">{{ story.level }} SEVİYESİ</span>
+                <span class="story-sub-order-badge">HİKAYE {{ story.order_in_level }} / 5</span>
+            </div>
+            <h1 class="story-title">{{ story.title }}</h1>
+            <p class="story-description">{{ story.description }}</p>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- SAYFA 1: GİRİŞ DİYALOĞU -->
+    <!-- ============================================================== -->
+    <div class="story-step-page active-page" id="page-step-1">
+        <div class="story-page-heading">
+            <span class="page-phase-tag">Adım 1 / 3: Giriş</span>
+            <h2 class="page-phase-title">Diyaloğu Dinle ve Takip Et 🎧</h2>
+        </div>
+
+        <div class="story-dialogue-stream">
+            {% for line in page1_lines %}
+            {% set is_left = (line.is_left == 1) %}
+            <div class="story-line-wrapper {% if is_left %}bubble-left{% else %}bubble-right{% endif %}"
+                 data-en="{{ line.english_text|e }}">
+                <div class="dialogue-avatar-wrap">
+                    {% if line.character_avatar and line.character_avatar.startswith('/') %}
+                        <img src="{{ line.character_avatar }}" alt="{{ line.character_name }}" class="dialogue-avatar-img">
+                    {% else %}
+                        <div class="dialogue-avatar-emoji">{{ line.character_avatar or (line.character_name[0]|upper) }}</div>
+                    {% endif %}
+                </div>
+                <div class="dialogue-bubble">
+                    <div class="bubble-speaker-tag">
+                        <span class="speaker-name">{{ line.character_name }}</span>
+                    </div>
+                    <div class="bubble-main-row">
+                        <button type="button" 
+                                class="bubble-speaker-btn" 
+                                onclick="playDialogueSpeech('{{ line.english_text|replace("'", "\\'") }}', this)" 
+                                title="İngilizce Telaffuzu Dinle">
+                            <svg class="speaker-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                            </svg>
+                        </button>
+                        <div class="bubble-english-text">{{ line.english_text }}</div>
+                    </div>
+                    <div class="bubble-turkish-text">{{ line.turkish_text }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- SAYFA 2: GELİŞME DİYALOĞU + MİNİ ANLAMA SORUSU -->
+    <!-- ============================================================== -->
+    <div class="story-step-page hidden-page" id="page-step-2">
+        <div class="story-page-heading">
+            <span class="page-phase-tag">Adım 2 / 3: Gelişme & Test</span>
+            <h2 class="page-phase-title">Olaylar Gelişiyor ve Mini Soru ❓</h2>
+        </div>
+
+        <div class="story-dialogue-stream">
+            {% for line in page2_lines %}
+            {% set is_left = (line.is_left == 1) %}
+            <div class="story-line-wrapper {% if is_left %}bubble-left{% else %}bubble-right{% endif %}"
+                 data-en="{{ line.english_text|e }}">
+                <div class="dialogue-avatar-wrap">
+                    {% if line.character_avatar and line.character_avatar.startswith('/') %}
+                        <img src="{{ line.character_avatar }}" alt="{{ line.character_name }}" class="dialogue-avatar-img">
+                    {% else %}
+                        <div class="dialogue-avatar-emoji">{{ line.character_avatar or (line.character_name[0]|upper) }}</div>
+                    {% endif %}
+                </div>
+                <div class="dialogue-bubble">
+                    <div class="bubble-speaker-tag">
+                        <span class="speaker-name">{{ line.character_name }}</span>
+                    </div>
+                    <div class="bubble-main-row">
+                        <button type="button" 
+                                class="bubble-speaker-btn" 
+                                onclick="playDialogueSpeech('{{ line.english_text|replace("'", "\\'") }}', this)" 
+                                title="İngilizce Telaffuzu Dinle">
+                            <svg class="speaker-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                            </svg>
+                        </button>
+                        <div class="bubble-english-text">{{ line.english_text }}</div>
+                    </div>
+                    <div class="bubble-turkish-text">{{ line.turkish_text }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Mini Anlama Testi Kutusu (Comprehension Quiz Card) -->
+        {% if question %}
+        <div class="story-quiz-card" id="story-quiz-card">
+            <div class="quiz-header">
+                <div class="quiz-badge">
+                    <span class="quiz-badge-icon">💡</span>
+                    <span>MİNİ ANLAMA TESTİ</span>
+                </div>
+                <h3 class="quiz-question-title">{{ question.question_text }}</h3>
+                <p class="quiz-hint-text">Diyaloğa göre doğru seçeneği işaretle ve kilidi aç:</p>
+            </div>
+
+            <div class="quiz-options-grid" id="quiz-options-container">
+                {% for opt in question.options %}
+                <button type="button" 
+                        class="quiz-option-btn" 
+                        data-answer="{{ opt|e }}" 
+                        onclick="handleQuizOptionClick(this, '{{ opt|replace("'", "\\'") }}')">
+                    <span class="option-letter">{{ loop.index | string | replace('1', 'A') | replace('2', 'B') | replace('3', 'C') | replace('4', 'D') }}</span>
+                    <span class="option-text">{{ opt }}</span>
+                    <span class="option-icon-check"></span>
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="quiz-feedback-box hidden" id="quiz-feedback-box">
+                <div class="feedback-icon" id="feedback-icon">✓</div>
+                <div class="feedback-content">
+                    <div class="feedback-heading" id="feedback-heading">Harika! Doğru Cevap!</div>
+                    <div class="feedback-explanation" id="feedback-explanation">{{ question.explanation }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- SAYFA 3: SONUÇ DİYALOĞU VE TAMAMLAMA -->
+    <!-- ============================================================== -->
+    <div class="story-step-page hidden-page" id="page-step-3">
+        <div class="story-page-heading">
+            <span class="page-phase-tag">Adım 3 / 3: Sonuç</span>
+            <h2 class="page-phase-title">Hikayenin Sonu & Başarı Ödülü 🎉</h2>
+        </div>
+
+        <div class="story-dialogue-stream">
+            {% for line in page3_lines %}
+            {% set is_left = (line.is_left == 1) %}
+            <div class="story-line-wrapper {% if is_left %}bubble-left{% else %}bubble-right{% endif %}"
+                 data-en="{{ line.english_text|e }}">
+                <div class="dialogue-avatar-wrap">
+                    {% if line.character_avatar and line.character_avatar.startswith('/') %}
+                        <img src="{{ line.character_avatar }}" alt="{{ line.character_name }}" class="dialogue-avatar-img">
+                    {% else %}
+                        <div class="dialogue-avatar-emoji">{{ line.character_avatar or (line.character_name[0]|upper) }}</div>
+                    {% endif %}
+                </div>
+                <div class="dialogue-bubble">
+                    <div class="bubble-speaker-tag">
+                        <span class="speaker-name">{{ line.character_name }}</span>
+                    </div>
+                    <div class="bubble-main-row">
+                        <button type="button" 
+                                class="bubble-speaker-btn" 
+                                onclick="playDialogueSpeech('{{ line.english_text|replace("'", "\\'") }}', this)" 
+                                title="İngilizce Telaffuzu Dinle">
+                            <svg class="speaker-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                            </svg>
+                        </button>
+                        <div class="bubble-english-text">{{ line.english_text }}</div>
+                    </div>
+                    <div class="bubble-turkish-text">{{ line.turkish_text }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="story-step3-celebration-card">
+            <img src="{{ url_for('static', filename='images/mascot_happy.svg') }}" alt="Ayıcık Yiğido Tebrik" class="step3-mascot">
+            <div class="step3-card-text">
+                <h3>Harika İlerledin! 🏆</h3>
+                <p>3 sayfalık hikaye akışını ve mini testi başarıyla tamamladın. Şimdi ödülünü alarak bitir!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sticky Bottom Action Bar -->
+    <footer class="story-footer-bar">
+        <div class="story-footer-inner">
+            <div class="story-step-info">
+                <span class="step-label">Aşama</span>
+                <span class="step-num" id="current-page-num">1</span> / 3
+            </div>
+
+            <!-- Action Button: Devam Et / Tamamla (+20 XP) -->
+            <button type="button" 
+                    class="btn-3d btn-blue btn-story-action" 
+                    id="story-action-btn" 
+                    onclick="handleStoryAction()">
+                <span id="story-action-text">DEVAM ET</span>
+                <span id="story-action-icon">➔</span>
+            </button>
+        </div>
+    </footer>
+</div>
+
+<!-- ============================================================== -->
+<!-- STORY COMPLETED CELEBRATION MODAL -->
+<!-- ============================================================== -->
+<div class="modal-overlay" id="story-complete-modal">
+    <div class="modal-card story-modal-card">
+        <div class="story-complete-mascot-wrap">
+            <img src="{{ url_for('static', filename='images/mascot_cheer.svg') }}" alt="Ayıcık Yiğido Şampiyon" class="modal-mascot">
+        </div>
+        
+        <span class="story-complete-badge">🎉 HİKAYE TAMAMLANDI!</span>
+        <h2 class="modal-title" style="margin-top: 10px; font-size: 24px;">Harika Bir Başarı! 🐻✨</h2>
+        <p class="modal-subtitle" style="font-size: 14px; margin-bottom: 20px;">
+            "{{ story.title }}" hikayesini ve anlama testini başarıyla tamamladın!
+        </p>
+
+        <!-- Unlocked New Level Announcement Banner (if 5 stories finished) -->
+        <div class="new-level-unlocked-banner hidden" id="modal-new-level-banner">
+            <span class="unlock-star-icon">🌟</span>
+            <div class="unlock-text-group">
+                <strong class="unlock-title">YENİ SEVİYE AÇILDI!</strong>
+                <p class="unlock-desc" id="modal-new-level-desc">Tebrikler, bir sonraki seviyenin kilidi açıldı!</p>
+            </div>
+        </div>
+
+        <div class="reward-badges">
+            <div class="reward-badge">
+                <span class="reward-value" id="story-reward-xp">+{{ story.xp_reward or 20 }} XP</span>
+                <span class="reward-label">Kazanılan XP</span>
+            </div>
+            <div class="reward-badge">
+                <span class="reward-value">3 / 3</span>
+                <span class="reward-label">Sayfa Başarısı</span>
+            </div>
+            <div class="reward-badge">
+                <span class="reward-value">🔥 <span id="story-reward-streak">{{ streak_count }}</span></span>
+                <span class="reward-label">Günlük Seri</span>
+            </div>
+        </div>
+
+        <div class="modal-actions-group" style="display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 15px;">
+            <a href="#" class="btn-3d btn-green" id="btn-modal-next-story" style="width: 100%; font-size: 14.5px; padding: 13px; text-decoration: none; display: none;">
+                ⚡ Sıradaki Hikayeye Geç ➔
+            </a>
+            <a href="{{ url_for('stories_library', level=story.level) }}" class="btn-3d btn-blue" style="width: 100%; font-size: 14.5px; padding: 13px; text-decoration: none;">
+                📚 Hikaye Kütüphanesine Git
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn-secondary-link" style="text-align: center; font-size: 13px; color: var(--text-muted); text-decoration: none; padding: 6px;">
+                Yol Haritasına Dön
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const storyId = {{ story.id }};
+    const correctAnswer = "{{ (question.correct_answer if question else '')|replace('"', '\\"') }}";
+    const hasQuestion = {{ 'true' if question else 'false' }};
+    
+    let currentPage = 1;
+    let quizPassed = false;
+    let isCompleting = false;
+
+    // Web Speech API Voice synthesis
+    function playDialogueSpeech(text, btnElement) {
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playTap) {
+            SoundEffects.playTap();
+        }
+        if (btnElement) {
+            btnElement.classList.add('speaking');
+        }
+
+        if (typeof SpeechEngine !== 'undefined' && SpeechEngine.speak) {
+            SpeechEngine.speak(text, 0.9, () => {
+                if (btnElement) btnElement.classList.remove('speaking');
+            });
+        } else if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text.trim());
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.05;
+            utterance.onend = () => {
+                if (btnElement) btnElement.classList.remove('speaking');
+            };
+            utterance.onerror = () => {
+                if (btnElement) btnElement.classList.remove('speaking');
+            };
+            window.speechSynthesis.speak(utterance);
+        } else {
+            if (btnElement) btnElement.classList.remove('speaking');
+        }
+    }
+
+    // Auto-play first line on current page
+    function autoPlayFirstLine(pageId) {
+        const pageEl = document.getElementById(pageId);
+        if (!pageEl) return;
+        const firstLine = pageEl.querySelector('.story-line-wrapper');
+        if (firstLine) {
+            const enText = firstLine.getAttribute('data-en');
+            const btn = firstLine.querySelector('.bubble-speaker-btn');
+            setTimeout(() => {
+                if (enText) playDialogueSpeech(enText, btn);
+            }, 350);
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        autoPlayFirstLine('page-step-1');
+    });
+
+    // Handle Page 2 Quiz Selection
+    function handleQuizOptionClick(btn, selectedOpt) {
+        if (quizPassed) return;
+
+        const allBtns = document.querySelectorAll('.quiz-option-btn');
+        allBtns.forEach(b => b.classList.remove('opt-wrong', 'opt-selected'));
+
+        if (selectedOpt === correctAnswer) {
+            quizPassed = true;
+            btn.classList.add('opt-correct');
+            allBtns.forEach(b => b.style.pointerEvents = 'none');
+
+            if (typeof SoundEffects !== 'undefined' && SoundEffects.playCorrect) {
+                SoundEffects.playCorrect();
+            }
+
+            // Show explanation feedback box
+            const feedbackBox = document.getElementById('quiz-feedback-box');
+            if (feedbackBox) {
+                feedbackBox.classList.remove('hidden');
+                feedbackBox.classList.add('show', 'feedback-success');
+            }
+
+            // Update action button to highlighted green
+            const actionBtn = document.getElementById('story-action-btn');
+            if (actionBtn) {
+                actionBtn.classList.remove('btn-locked-action');
+                actionBtn.classList.add('btn-green', 'pulse-green');
+            }
+        } else {
+            btn.classList.add('opt-wrong');
+            if (typeof SoundEffects !== 'undefined' && SoundEffects.playWrong) {
+                SoundEffects.playWrong();
+            }
+            setTimeout(() => {
+                btn.classList.remove('opt-wrong');
+            }, 800);
+        }
+    }
+
+    // Step Navigation Flow
+    function handleStoryAction() {
+        if (currentPage === 1) {
+            // Advance to Page 2
+            goToPage(2);
+        } else if (currentPage === 2) {
+            // Require answering quiz before going to Page 3
+            if (hasQuestion && !quizPassed) {
+                const quizCard = document.getElementById('story-quiz-card');
+                if (quizCard) {
+                    quizCard.classList.add('shake-card');
+                    quizCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => quizCard.classList.remove('shake-card'), 600);
+                }
+                if (typeof SoundEffects !== 'undefined' && SoundEffects.playWrong) {
+                    SoundEffects.playWrong();
+                }
+                return;
+            }
+            goToPage(3);
+        } else if (currentPage === 3) {
+            // Complete Story & Award XP
+            finishStoryAndAwardXP();
+        }
+    }
+
+    function goToPage(pageNum) {
+        if (typeof SoundEffects !== 'undefined' && SoundEffects.playTap) {
+            SoundEffects.playTap();
+        }
+
+        // Hide all pages
+        document.querySelectorAll('.story-step-page').forEach(p => {
+            p.classList.remove('active-page');
+            p.classList.add('hidden-page');
+        });
+
+        // Show target page
+        const targetPage = document.getElementById(`page-step-${pageNum}`);
+        if (targetPage) {
+            targetPage.classList.remove('hidden-page');
+            targetPage.classList.add('active-page');
+        }
+
+        currentPage = pageNum;
+        document.getElementById('current-page-num').textContent = pageNum;
+
+        // Update stepper top bar
+        updateStepper(pageNum);
+
+        // Update action button text/icon
+        const actionText = document.getElementById('story-action-text');
+        const actionIcon = document.getElementById('story-action-icon');
+        const actionBtn = document.getElementById('story-action-btn');
+
+        if (pageNum === 2) {
+            actionText.textContent = 'DEVAM ET';
+            actionIcon.textContent = '➔';
+            if (hasQuestion && !quizPassed) {
+                actionBtn.className = 'btn-3d btn-blue btn-story-action';
+            } else {
+                actionBtn.className = 'btn-3d btn-green btn-story-action pulse-green';
+            }
+            autoPlayFirstLine('page-step-2');
+        } else if (pageNum === 3) {
+            actionText.textContent = 'TAMAMLA (+20 XP) 🎉';
+            actionIcon.textContent = '🏆';
+            actionBtn.className = 'btn-3d btn-green btn-story-action pulse-green';
+            autoPlayFirstLine('page-step-3');
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateStepper(step) {
+        for (let i = 1; i <= 3; i++) {
+            const pill = document.getElementById(`pill-step-${i}`);
+            if (pill) {
+                if (i <= step) {
+                    pill.classList.add('active');
+                } else {
+                    pill.classList.remove('active');
+                }
+            }
+            if (i < 3) {
+                const line = document.getElementById(`line-step-${i}`);
+                if (line) {
+                    if (i < step) {
+                        line.classList.add('completed');
+                    } else {
+                        line.classList.remove('completed');
+                    }
+                }
+            }
+        }
+    }
+
+    async function finishStoryAndAwardXP() {
+        if (isCompleting) return;
+        isCompleting = true;
+
+        const actionBtn = document.getElementById('story-action-btn');
+        if (actionBtn) actionBtn.disabled = true;
+
+        try {
+            const res = await fetch(`/api/story/${storyId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                if (typeof SoundEffects !== 'undefined' && SoundEffects.playComplete) {
+                    SoundEffects.playComplete();
+                }
+
+                // Update modal elements
+                const streakEl = document.getElementById('story-reward-streak');
+                if (streakEl && data.streak) streakEl.textContent = data.streak;
+
+                const xpEl = document.getElementById('story-reward-xp');
+                if (xpEl) xpEl.textContent = `+${data.xp_gained || 20} XP`;
+
+                // If new level unlocked!
+                if (data.unlocked_new_level) {
+                    const unlockBanner = document.getElementById('modal-new-level-banner');
+                    const unlockDesc = document.getElementById('modal-new-level-desc');
+                    if (unlockBanner && unlockDesc) {
+                        unlockBanner.classList.remove('hidden');
+                        unlockDesc.textContent = `Tebrikler! ${data.unlocked_new_level} seviyesinin kilidi otomatik olarak açıldı!`;
+                    }
+                }
+
+                // If next story available
+                if (data.next_story_id) {
+                    const nextBtn = document.getElementById('btn-modal-next-story');
+                    if (nextBtn) {
+                        nextBtn.href = `/story/${data.next_story_id}`;
+                        nextBtn.style.display = 'block';
+                    }
+                }
+
+                // Open completion modal
+                const modal = document.getElementById('story-complete-modal');
+                if (modal) modal.classList.add('open');
+            } else {
+                alert('Ödül kaydedilirken bir hata oluştu.');
+                if (actionBtn) actionBtn.disabled = false;
+                isCompleting = false;
+            }
+        } catch (err) {
+            console.error('Story completion error:', err);
+            const modal = document.getElementById('story-complete-modal');
+            if (modal) modal.classList.add('open');
+        }
+    }
+</script>
+{% endblock %}
